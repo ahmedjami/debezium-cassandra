@@ -1,3 +1,5 @@
+In this example, we will start a Cassandra Cluster with the default snitch SimpleSnitch.
+To use another's types of Snitches, take a look at respective directories.
 1. Start containers
 ```
 docker-compose up
@@ -22,5 +24,5 @@ docker-compose exec -d cassandra-seed /opt/cassandra/tools/bin/cassandra-stress 
 
 5. Verify events on debezium logs
 ```
-docker-compose exec cassandra-seed  cat debezium.stdout.log | grep -i "commit"; done
+docker-compose exec cassandra-seed  cat debezium.stdout.log | grep -i "commit";
 ```

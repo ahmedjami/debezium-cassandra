@@ -1,0 +1,88 @@
+version: '2.1'
+
+services:
+  zoo1:
+    image: zookeeper:3.4.9
+    hostname: zoo1
+    ports:
+      - "2181:2181"
+    environment:
+        ZOO_MY_ID: 1
+        ZOO_PORT: 2181
+        ZOO_SERVERS: server.1=zoo1:2888:3888
+    volumes:
+      - ./helenus-dev/zoo1/data:/data
+      - ./helenus-dev/zoo1/datalog:/datalog
+
+  kafka1:
+    image: confluentinc/cp-kafka:5.3.1
+    hostname: kafka1
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - ./helenus-dev/kafka1/data:/var/lib/kafka/data
+    depends_on:
+      - zoo1
+  schemaregistry:
+    image: confluentinc/cp-schema-registry
+    hostname: schemaregistry
+    ports:
+      - "8081:8081"
+    environment:
+      - "SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL=zoo1:2181"
+      - "SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL=PLAINTEXT"
+      - "SCHEMA_REGISTRY_LISTENERS=http://schemaregistry:8081, http://localhost:8081"
+      - "SCHEMA_REGISTRY_HOST_NAME=schemaregistry"
+      - "SCHEMA_REGISTRY_DEBUG=true"
+    volumes:
+      - ./helenus-dev/schemaregistry/data:/var/lib/
+    depends_on:
+      - kafka1
+  cassandra-seed:
+    build:
+      context: .
+      dockerfile: Dockerfile_cassandra
+    ports:
+      - "9042:9042"
+    volumes:
+      - "cassandra_data_seed:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_SEEDS=cassandra-seed"
+    depends_on:
+      - kafka1
+      - schemaregistry
+  cassandra1:
+    build:
+      context: .
+      dockerfile: Dockerfile_cassandra
+    volumes:
+      - "cassandra_data_1:/var/lib/cassandra"
+    environment: 
+      - "CASSANDRA_SEEDS=cassandra-seed"
+    depends_on:
+      - cassandra-seed
+      - schemaregistry
+  cassandra2:
+    build:
+      context: .
+      dockerfile: Dockerfile_cassandra
+    volumes:
+      - "cassandra_data_2:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_SEEDS=cassandra-seed"
+    depends_on:
+      - cassandra1
+      - schemaregistry
+
+volumes:
+  cassandra_data_seed:
+  cassandra_data_1:
+  cassandra_data_2:

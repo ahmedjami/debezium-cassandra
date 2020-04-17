@@ -13,7 +13,7 @@ docker-compose exec -d cassandra-seed cqlsh -e "ALTER TABLE keyspace1.standard1 
 ```
 3. Start debezium
 ```
-docker-compose exec cassandra-seed  sh start-debezium.sh; done
+docker-compose exec cassandra-seed  sh start-debezium.sh;
 ```
 This can take some time as cassandra takes some time to start. 
 
